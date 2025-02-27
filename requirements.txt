@@ -1,10 +1,7 @@
 fastapi
-bcrypt
-cryptography
-python-jose
-python-multipart
-SQLAlchemy
+sqlalchemy
+databases
 uvicorn
-passlib
-pydantic
+bcrypt
 jwt
+aiomysql
