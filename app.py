@@ -117,7 +117,7 @@ async def create_user(data: SignUpModel, db: Session = Depends(get_db)):
     try:
         # Check if the email or username already exists
         query = select(User).where((User.email == data.email) | (User.username == data.username))
-        existing_user = await database.fetch_one(query)
+        existing_user = await db.fetch_one(query)
         if existing_user:
             raise HTTPException(status_code=400, detail="Email or username already registered")
 
