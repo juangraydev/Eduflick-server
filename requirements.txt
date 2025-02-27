@@ -1,1 +1,10 @@
 fastapi
+bcrypt
+cryptography
+python-jose
+python-multipart
+SQLAlchemy
+uvicorn
+passlib
+pydantic
+jwt
