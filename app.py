@@ -6,6 +6,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from models import User
 from datetime import datetime, timedelta
 import bcrypt
 import jwt
