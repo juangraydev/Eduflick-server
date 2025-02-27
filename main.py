@@ -51,6 +51,15 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
+@app.post("/")
+async def login():
+    return {
+        "status": "200",
+        "message": "Login successful",
+        "data": "Hello World!"
+    }
+
+
 class LoginModel(BaseModel):
     email: str
     password: str
