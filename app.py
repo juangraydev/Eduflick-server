@@ -1,14 +1,32 @@
-from fastapi import FastAPI, HTTPException, Depends
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel, Field, Session, select
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from database import get_db, database
 import bcrypt
 import jwt
 
+DATABASE_URL = "sqlite:///./test.db"  # SQLite database URL
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+metadata = MetaData()
+Base = declarative_base()
+
+# Create the database tables
+SQLModel.metadata.create_all(engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        
 app = FastAPI()
 
 origins = [
@@ -39,37 +57,31 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+# @app.on_event("startup")
+# async def startup():
+#     await database.connect()
 
-@app.on_event("startup")
-async def startup():
-    await database.connect()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await database.disconnect()
+# @app.on_event("shutdown")
+# async def shutdown():
+#     await database.disconnect()
 
 # Root route
 @app.get("/")
 def root():
     return {"message": "Welcome to the root route!"}
 
-
 class LoginModel(BaseModel):
     email: str
     password: str
 
-users_db = {
-    "user1": bcrypt.hashpw("password123".encode('utf-8'), bcrypt.gensalt())
-}
-
 @app.post("/api/login")
 async def login(data: LoginModel, db: Session = Depends(get_db)):
-    try: 
+    try:
         user = db.query(User).filter(User.email == data.email).first()
 
         if not user or not bcrypt.checkpw(data.password.encode('utf-8'), user.password.encode('utf-8')):
             raise HTTPException(status_code=400, detail="Invalid email or password")
-        
+
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={
@@ -78,7 +90,7 @@ async def login(data: LoginModel, db: Session = Depends(get_db)):
                 "email": user.email
             }, expires_delta=access_token_expires
         )
-        
+
         return {
             "status": "200",
             "message": "Login successful",
@@ -92,7 +104,6 @@ async def login(data: LoginModel, db: Session = Depends(get_db)):
             "status": '500',
             "message": str(e)
         }
-
 
 class SignUpModel(BaseModel):
     username: str
@@ -108,7 +119,7 @@ async def create_user(data: SignUpModel, db: Session = Depends(get_db)):
         if existing_user:
             raise HTTPException(status_code=400, detail="Email or username already registered")
 
-         # Insert the new user into the database
+        # Insert the new user into the database
         new_user = User(username=data.username, email=data.email, password=bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()))
         db.add(new_user)
         db.commit()
@@ -122,5 +133,3 @@ async def create_user(data: SignUpModel, db: Session = Depends(get_db)):
             "status": '500',
             "message": str(e)
         }
-
-

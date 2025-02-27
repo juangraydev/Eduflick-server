@@ -1,19 +1,18 @@
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.ext.declarative import declarative_base
-from databases import Database
 from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel, Field, Session, select
+from fastapi import FastAPI, Depends
 
+DATABASE_URL = "sqlite:///./test.db"  # SQLite database URL
 
-DATABASE_URL = "mysql+pymysql://root:abcd.1234@127.0.0.1:3307/eduflickdb"  # Replace with your MariaDB URL
-
-database = Database(DATABASE_URL)
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 metadata = MetaData()
 Base = declarative_base()
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-metadata.create_all(engine)
-
+# Create the database tables
+SQLModel.metadata.create_all(engine)
 
 def get_db():
     db = SessionLocal()
